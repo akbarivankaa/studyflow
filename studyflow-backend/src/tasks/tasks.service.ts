@@ -15,7 +15,6 @@ export class TasksService {
 
   private nextId = 1;
 
-  // CREATE: Menambahkan tugas baru
   create(createTaskDto: CreateTaskDto): Task {
     const title = createTaskDto.title.trim();
     const course = createTaskDto.course.trim();
@@ -37,12 +36,10 @@ export class TasksService {
     return newTask;
   }
 
-  // READ: Menampilkan seluruh tugas
   findAll(): Task[] {
     return [...this.tasks];
   }
 
-  // READ: Menampilkan satu tugas berdasarkan ID
   findOne(id: number): Task {
     const task = this.tasks.find((item) => item.id === id);
 
@@ -55,7 +52,6 @@ export class TasksService {
     return task;
   }
 
-  // UPDATE: Memperbarui tugas berdasarkan ID
   update(
     id: number,
     updateTaskDto: UpdateTaskDto,
@@ -84,7 +80,6 @@ export class TasksService {
     return updatedTask;
   }
 
-  // DELETE: Menghapus tugas berdasarkan ID
   remove(id: number): {
     message: string;
     deletedTask: Task;
@@ -101,7 +96,6 @@ export class TasksService {
     };
   }
 
-  // Memeriksa duplikasi judul dan mata kuliah
   private ensureUnique(
     title: string,
     course: string,
