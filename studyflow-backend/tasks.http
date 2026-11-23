@@ -1,0 +1,71 @@
+
+### 1. POST - Tambah tugas baru
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "Menyelesaikan laporan praktikum React",
+  "course": "Pemrograman Web",
+  "deadline": "2026-12-01",
+  "priority": "Tinggi"
+}
+
+### 2. POST - Menguji tugas duplikat (ConflictException)
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "Menyelesaikan laporan praktikum React",
+  "course": "Pemrograman Web",
+  "deadline": "2026-12-01",
+  "priority": "Tinggi"
+}
+
+### 3. GET - Menampilkan seluruh tugas
+GET http://localhost:3000/tasks
+
+### 4. GET - Menampilkan tugas berdasarkan ID
+GET http://localhost:3000/tasks/1
+
+### 5. PATCH - Mengubah status tugas
+PATCH http://localhost:3000/tasks/1
+Content-Type: application/json
+
+{
+  "status": "Sedang dikerjakan",
+  "priority": "Sedang"
+}
+
+### 6. GET - Memeriksa hasil perubahan
+GET http://localhost:3000/tasks/1
+
+### 7. DELETE - Menghapus tugas
+DELETE http://localhost:3000/tasks/1
+
+### 8. GET - Memastikan tugas sudah terhapus
+GET http://localhost:3000/tasks
+
+### 9. GET - Menguji NotFoundException
+GET http://localhost:3000/tasks/999
+
+### 10. POST - Menguji validasi DTO
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "AB",
+  "course": "Pemrograman Web",
+  "deadline": "2026-12-01",
+  "priority": "Tinggi"
+}
+
+### POST - Menguji validasi DTO
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "AB",
+  "course": "Pemrograman Web",
+  "deadline": "2026-12-01",
+  "priority": "Tinggi"
+}

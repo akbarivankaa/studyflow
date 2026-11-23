@@ -1,72 +1,135 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import AppHeader from "./components/AppHeader";
 import SummaryCards from "./components/SummaryCards";
 import TaskForm from "./components/TaskForm";
 import TaskFilter from "./components/TaskFilter";
 import TaskList from "./components/TaskList";
 
-const initialTasks = [
-  {
-    id: 1,
-    title: "Menyusun laporan praktikum React",
-    course: "Pemrograman Web",
-    deadline: "2026-11-02",
-    priority: "Tinggi",
-    status: "Sedang dikerjakan",
-  },
-  {
-    id: 2,
-    title: "Mempelajari state dan props",
-    course: "React Dasar",
-    deadline: "2026-11-04",
-    priority: "Sedang",
-    status: "Belum dikerjakan",
-  },
-  {
-    id: 3,
-    title: "Menyelesaikan latihan komponen UI",
-    course: "Pengembangan Web",
-    deadline: "2026-11-06",
-    priority: "Rendah",
-    status: "Selesai",
-  },
-];
+const API_URL = "http://localhost:3000/tasks";
+
+async function apiRequest(endpoint, options = {}) {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...options.headers,
+    },
+  });
+
+  const responseText = await response.text();
+  let data = null;
+
+  if (responseText) {
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = responseText;
+    }
+  }
+
+  if (!response.ok) {
+    const message = Array.isArray(data?.message)
+      ? data.message.join(", ")
+      : data?.message || "Terjadi kesalahan pada server.";
+
+    throw new Error(message);
+  }
+
+  return data;
+}
 
 function App() {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState([]);
   const [activeFilter, setActiveFilter] = useState("Semua");
 
-  function handleAddTask(newTask) {
-    setTasks((currentTasks) => [
-      {
-        ...newTask,
-        id: Date.now(),
-        status: "Belum dikerjakan",
-      },
-      ...currentTasks,
-    ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
 
-    setActiveFilter("Semua");
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const data = await apiRequest("");
+
+        setTasks(data);
+        setLoadError("");
+      } catch (error) {
+        setLoadError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchTasks();
+  }, []);
+
+  async function handleAddTask(newTask) {
+    setActionError("");
+
+    try {
+      const createdTask = await apiRequest("", {
+        method: "POST",
+        body: JSON.stringify(newTask),
+      });
+
+      setTasks((currentTasks) => [
+        createdTask,
+        ...currentTasks,
+      ]);
+
+      setActiveFilter("Semua");
+    } catch (error) {
+      setActionError(error.message);
+      throw error;
+    }
   }
 
-  function handleUpdateStatus(id, newStatus) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id ? { ...task, status: newStatus } : task
-      )
-    );
+  async function handleUpdateStatus(id, newStatus) {
+    setActionError("");
+
+    try {
+      const updatedTask = await apiRequest(`/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === id ? updatedTask : task
+        )
+      );
+    } catch (error) {
+      setActionError(error.message);
+    }
   }
 
-  function handleDeleteTask(id) {
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== id)
-    );
+  async function handleDeleteTask(id) {
+    setActionError("");
+
+    try {
+      await apiRequest(`/${id}`, {
+        method: "DELETE",
+      });
+
+      setTasks((currentTasks) =>
+        currentTasks.filter((task) => task.id !== id)
+      );
+    } catch (error) {
+      setActionError(error.message);
+    }
   }
 
   const filteredTasks =
     activeFilter === "Semua"
       ? tasks
-      : tasks.filter((task) => task.status === activeFilter);
+      : tasks.filter(
+          (task) => task.status === activeFilter
+        );
 
   return (
     <div className="app-shell">
@@ -75,8 +138,12 @@ function App() {
       <main className="container" id="dashboard">
         <section className="welcome-section">
           <div>
-            <p className="eyebrow">STUDENT TASK MANAGEMENT</p>
+            <p className="eyebrow">
+              STUDENT TASK MANAGEMENT
+            </p>
+
             <h1>Kelola tugasmu, capai tujuanmu.</h1>
+
             <p className="welcome-description">
               Semua tugas kuliahmu dalam satu tempat.
               Tetap teratur dan selesaikan satu per satu.
@@ -110,7 +177,10 @@ function App() {
             </div>
           </aside>
 
-          <section className="tasks-panel" id="daftar-tugas">
+          <section
+            className="tasks-panel"
+            id="daftar-tugas"
+          >
             <div className="section-heading">
               <div>
                 <h2>Daftar Tugas</h2>
@@ -122,23 +192,38 @@ function App() {
               </span>
             </div>
 
+            {actionError && (
+              <p className="api-error" role="alert">
+                {actionError}
+              </p>
+            )}
+
             <TaskFilter
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}
             />
 
-            <TaskList
-              tasks={filteredTasks}
-              totalTasks={tasks.length}
-              onUpdateStatus={handleUpdateStatus}
-              onDeleteTask={handleDeleteTask}
-            />
+            {isLoading ? (
+              <p>Memuat data tugas dari server...</p>
+            ) : loadError ? (
+              <div className="empty-state">
+                <h3>Gagal mengambil data tugas</h3>
+                <p>{loadError}</p>
+              </div>
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                totalTasks={tasks.length}
+                onUpdateStatus={handleUpdateStatus}
+                onDeleteTask={handleDeleteTask}
+              />
+            )}
           </section>
         </section>
 
         <footer className="app-footer">
           <p>
-            StudyFlow · Dikembangkan oleh Muhammad Akbar Ivanka
+            StudyFlow · Muhammad Akbar Ivanka
             · 103122400069
           </p>
         </footer>

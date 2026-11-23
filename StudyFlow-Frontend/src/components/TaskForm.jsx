@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 
 const initialForm = {
@@ -9,6 +10,8 @@ const initialForm = {
 
 function TaskForm({ onAddTask }) {
   const [formData, setFormData] = useState(initialForm);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -19,17 +22,26 @@ function TaskForm({ onAddTask }) {
     }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    onAddTask({
-      title: formData.title.trim(),
-      course: formData.course.trim(),
-      deadline: formData.deadline,
-      priority: formData.priority,
-    });
+    setSubmitError("");
+    setIsSubmitting(true);
 
-    setFormData(initialForm);
+    try {
+      await onAddTask({
+        title: formData.title.trim(),
+        course: formData.course.trim(),
+        deadline: formData.deadline,
+        priority: formData.priority,
+      });
+
+      setFormData(initialForm);
+    } catch (error) {
+      setSubmitError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -39,6 +51,7 @@ function TaskForm({ onAddTask }) {
           <h2>Tambah Tugas</h2>
           <p>Catat tugas kuliah yang baru.</p>
         </div>
+
         <span className="form-heading-icon">＋</span>
       </div>
 
@@ -52,6 +65,7 @@ function TaskForm({ onAddTask }) {
             placeholder="Contoh: Laporan praktikum"
             value={formData.title}
             onChange={handleChange}
+            minLength={3}
             required
           />
         </div>
@@ -65,6 +79,7 @@ function TaskForm({ onAddTask }) {
             placeholder="Contoh: Pemrograman Web"
             value={formData.course}
             onChange={handleChange}
+            minLength={2}
             required
           />
         </div>
@@ -95,8 +110,18 @@ function TaskForm({ onAddTask }) {
           </select>
         </div>
 
-        <button className="primary-button" type="submit">
-          <span>＋</span> Tambah Tugas
+        {submitError && (
+          <p className="form-error" role="alert">
+            {submitError}
+          </p>
+        )}
+
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Menyimpan..." : "＋ Tambah Tugas"}
         </button>
       </form>
     </div>
